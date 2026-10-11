@@ -553,6 +553,43 @@ state.hidden=!!state.profile.hideByDefault;updateProfile();renderAll();save();
 })();
 </script>
 
+<script>
+/* Correção de emergência para os controles do cabeçalho: delegação global de cliques. */
+(function(){
+  'use strict';
+  const byId=id=>document.getElementById(id);
+  function showSettingsFallback(){
+    const panel=byId('view-settings');
+    if(!panel) return;
+    document.querySelectorAll('.view').forEach(v=>{v.classList.remove('active');v.style.display='none';});
+    panel.classList.add('active');panel.style.display='block';
+    document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+    try { if(typeof window.openRibeiroSettings==='function') window.openRibeiroSettings(); } catch(err){ console.error(err); }
+    try { window.scrollTo(0,0); } catch(_){}
+  }
+  function openProfileFallback(){
+    try { if(typeof window.openRibeiroProfileEditor==='function'){window.openRibeiroProfileEditor();return;} } catch(err){console.error(err);}
+    const backdrop=byId('modalBackdrop'), title=byId('modalTitle'), body=byId('modalBody');
+    if(!backdrop||!title||!body){showSettingsFallback();return;}
+    let name='Tony Ribeiro';
+    try {const saved=JSON.parse(localStorage.getItem('ribeiro_financas_v1')||'{}');name=saved.profile?.name||name;}catch(_){}
+    title.textContent='Editar perfil';
+    body.innerHTML='<div class="profile-editor"><button type="button" class="profile-photo-choice" id="profileModalChangePhoto"><span class="settings-photo-preview">TR</span><span><strong>Alterar foto</strong><small>Escolha uma foto para o seu perfil.</small></span><span class="profile-chevron">›</span></button><form id="profileEditorEmergencyForm"><div class="field" style="margin-top:14px"><label for="profileEditorEmergencyName">Seu nome</label><input id="profileEditorEmergencyName" required maxlength="60" autocomplete="name"></div><div class="form-actions"><button type="button" class="btn light" id="profileEditorEmergencyCancel">Cancelar</button><button type="submit" class="btn">Salvar perfil</button></div></form></div>';
+    byId('profileEditorEmergencyName').value=name;
+    backdrop.classList.add('open');document.body.style.overflow='hidden';
+    byId('profileEditorEmergencyCancel').onclick=()=>{backdrop.classList.remove('open');document.body.style.overflow='';};
+    byId('profileEditorEmergencyForm').onsubmit=e=>{e.preventDefault();const next=byId('profileEditorEmergencyName').value.trim()||'Tony Ribeiro';try{const data=JSON.parse(localStorage.getItem('ribeiro_financas_v1')||'{}');data.profile=data.profile||{};data.profile.name=next;localStorage.setItem('ribeiro_financas_v1',JSON.stringify(data));const heading=byId('displayName');if(heading)heading.textContent=next;backdrop.classList.remove('open');document.body.style.overflow='';}catch(err){alert('Não foi possível salvar o nome neste navegador.');}};
+  }
+  document.addEventListener('click',function(e){
+    const settings=e.target.closest('#openSettings');
+    const avatar=e.target.closest('#avatarButton');
+    const profile=e.target.closest('#settingsProfileButton');
+    if(settings){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();showSettingsFallback();return;}
+    if(avatar||profile){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();openProfileFallback();}
+  },true);
+})();
+</script>
+
 
 </body>
 </html>
